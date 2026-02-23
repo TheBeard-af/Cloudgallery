@@ -1,0 +1,5 @@
+{
+  "IamInstanceProfile": {
+    "Name": "CloudGallery-EC2-InstanceProfile"
+  }
+}

@@ -1,31 +1,24 @@
 #!/bin/bash
 dnf update -y
 
-# Install Node.js (Amazon Linux 2023 supports modern Node)
-dnf install -y nodejs
+# Install required packages
+dnf install -y nodejs git
 
 # Install PM2 globally
 npm install -g pm2
 
-# Create app directory
-mkdir -p /home/ec2-user/app
-cd /home/ec2-user/app
+# Go to home directory
+cd /home/ec2-user
 
-cat <<EOF > server.js
-const express = require('express');
-const app = express();
+# Clone GitHub repository
+git clone https://github.com/TheBeard-af/Cloudgallery.git
 
-app.get('/', (req, res) => {
-  res.send('CloudGallery App Server Running - Healthy (AL2023)');
-});
+# Navigate to backend folder
+cd Cloudgallery/backend
 
-app.listen(80, () => {
-  console.log('Server running on port 80');
-});
-EOF
+# Install dependencies
+npm install
 
-npm init -y
-npm install express
-
+# Start backend with PM2
 pm2 start server.js
 pm2 save

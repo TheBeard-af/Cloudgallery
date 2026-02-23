@@ -1,6 +1,22 @@
 const express = require("express");
 const mongoose = require("mongoose");
 
+const {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+} = require("@aws-sdk/client-s3");
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
+
+const s3 = new S3Client({ region: "ap-southeast-2" });
+
+const BUCKET_NAME = "cloudgallery-images-2026";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
+
 const app = express();
 app.use(express.json());
 
@@ -31,6 +47,55 @@ app.post("/test", async (req, res) => {
 app.get("/items", async (req, res) => {
   const items = await Item.find();
   res.json(items);
+});
+
+app.post("/upload", upload.single("image"), async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const fileName = `${uuidv4()}-${file.originalname}`;
+
+    const command = new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    });
+
+    await s3.send(command);
+
+    res.json({
+      message: "Upload successful",
+      fileName: fileName,
+      url: `https://${BUCKET_NAME}.s3.ap-southeast-2.amazonaws.com/${fileName}`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Upload failed" });
+  }
+});
+app.get("/images", async (req, res) => {
+  try {
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+    });
+
+    const response = await s3.send(command);
+
+    const images = (response.Contents || []).map((item) => ({
+      key: item.Key,
+      url: `https://${BUCKET_NAME}.s3.ap-southeast-2.amazonaws.com/${item.Key}`,
+    }));
+
+    res.json(images);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not retrieve images" });
+  }
 });
 
 app.listen(80, () => {

@@ -1,0 +1,6 @@
+{
+  "IamInstanceProfile": {
+    "Name": "CloudGallery-EC2-InstanceProfile"
+  },
+  "KeyName": "RSA key pair"
+}
