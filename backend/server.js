@@ -1,3 +1,4 @@
+const cors = require("cors");
 const express = require("express");
 const mongoose = require("mongoose");
 
@@ -18,6 +19,7 @@ const upload = multer({
 });
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const mongoURI = "mongodb://10.0.21.5:27017/cloudgallery";
