@@ -1,0 +1,14 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "cloudgallery-images-2026"
+        },
+        "object": {
+          "key": "9ad171fe-43bf-4ace-ae61-7633f43ef83c-test.png"
+        }
+      }
+    }
+  ]
+}
