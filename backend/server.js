@@ -118,6 +118,42 @@ app.get("/thumbnails", async (req, res) => {
   }
 });
 
+app.get("/gallery", async (req, res) => {
+  try {
+    const imageCommand = new ListObjectsV2Command({
+      Bucket: "cloudgallery-images-2026",
+    });
+
+    const thumbCommand = new ListObjectsV2Command({
+      Bucket: "cloudgallery-thumbnails-2026",
+    });
+
+    const imageResponse = await s3.send(imageCommand);
+    const thumbResponse = await s3.send(thumbCommand);
+
+    const images = imageResponse.Contents || [];
+    const thumbnails = thumbResponse.Contents || [];
+
+    const gallery = images.map((image) => {
+      const matchingThumb = thumbnails.find(
+        (thumb) => thumb.Key === `thumb-${image.Key}`,
+      );
+
+      return {
+        original: `https://cloudgallery-images-2026.s3.ap-southeast-2.amazonaws.com/${image.Key}`,
+        thumbnail: matchingThumb
+          ? `https://cloudgallery-thumbnails-2026.s3.ap-southeast-2.amazonaws.com/${matchingThumb.Key}`
+          : null,
+      };
+    });
+
+    res.json(gallery);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not retrieve gallery" });
+  }
+});
+
 app.listen(80, () => {
   console.log("Server running on port 80");
 });
