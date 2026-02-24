@@ -98,6 +98,26 @@ app.get("/images", async (req, res) => {
   }
 });
 
+app.get("/thumbnails", async (req, res) => {
+  try {
+    const command = new ListObjectsV2Command({
+      Bucket: "cloudgallery-thumbnails-2026",
+    });
+
+    const response = await s3.send(command);
+
+    const thumbnails = (response.Contents || []).map((item) => ({
+      key: item.Key,
+      url: `https://cloudgallery-thumbnails-2026.s3.ap-southeast-2.amazonaws.com/${item.Key}`,
+    }));
+
+    res.json(thumbnails);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Could not retrieve thumbnails" });
+  }
+});
+
 app.listen(80, () => {
   console.log("Server running on port 80");
 });
