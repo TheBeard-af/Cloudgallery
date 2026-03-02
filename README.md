@@ -509,3 +509,290 @@ This project serves as both:
 ---
 
 # 🔚 End of Documentation
+
+# 🌩 CloudGallery — Infrastructure Pause Report & Recovery Guide
+
+---
+
+# 📌 PROJECT STATUS: FULLY PAUSED (COST MINIMIZED)
+
+CloudGallery has been safely paused.  
+All runtime billing components have been removed.  
+All data and architecture configuration remain intact.
+
+Estimated current monthly cost: **~\$3–\$6/month**
+
+---
+
+# ✅ WHAT WAS DONE (FULL CLEANUP SUMMARY)
+
+## 1️⃣ Removed Old Practice Infrastructure
+
+Deleted:
+
+- Auto Scaling Group: `web-asg`
+- 3 EC2 instances belonging to `web-asg`
+- Old Load Balancer: `ALB`
+- Old Target Group: `web-tgs`
+- Old NAT Gateway: `nat-0277b046b543d1722`
+- Unused Elastic IP: `13.236.17.150`
+- Elastic IP previously attached to old ALB: `13.55.66.214`
+
+Result:
+
+- Eliminated unused compute
+- Eliminated duplicate load balancer
+- Removed old NAT charges (~\$45/month)
+- Removed unused EIP charges
+
+---
+
+## 2️⃣ Paused CloudGallery Runtime Infrastructure
+
+### ✅ Scaled Auto Scaling Group to Zero
+
+Auto Scaling Group:
+
+- Name: `CloudGallery-ASG`
+- Launch Template: `CloudGallery-App-LT (v14)`
+- Min: 0
+- Desired: 0
+- Max: 0
+
+Terminated:
+
+- App Instance: `i-08e3996de40ad780a`
+
+---
+
+### ✅ Stopped Compute Instances
+
+Stopped:
+
+- MongoDB EC2: `i-054117cab543ad7a9`
+- Bastion EC2: `i-06561a922b6108831`
+
+Compute billing stopped.
+
+---
+
+### ✅ Deleted Runtime Networking Components
+
+Deleted:
+
+- Load Balancer: `CloudGallery-ALB`
+- NAT Gateway: `nat-0dccfab2838b0ef77`
+- Released Elastic IP: `3.105.121.212`
+
+All runtime networking costs eliminated.
+
+---
+
+# 🏗 CURRENT INFRASTRUCTURE STATE
+
+## ✅ VPC
+
+- VPC Name: `CloudGallery-VPC`
+- VPC ID: `vpc-04ac36b0fe47f1f7d`
+
+---
+
+## ✅ Subnets
+
+Public Subnets:
+
+- `subnet-00378382c950c18de` (CloudGallery-Public-2a)
+- `subnet-0247b7264fcc9add1` (CloudGallery-Public-2b)
+- `subnet-09ea950429aa9456e` (CloudGallery-Public-2c)
+
+Private App Subnet:
+
+- `subnet-0cfdb2c38e2fd0de1` (CloudGallery-PrivateApp-2b)
+
+Private DB Subnet:
+
+- Within CloudGallery-VPC (MongoDB location preserved)
+
+---
+
+## ✅ EC2 Instances (Stopped)
+
+### MongoDB
+
+- Instance ID: `i-054117cab543ad7a9`
+- Type: `t3.micro`
+- Volume: `vol-0326049b3cdf539c8` (8 GiB gp2)
+
+### Bastion
+
+- Instance ID: `i-06561a922b6108831`
+- Type: `t3.micro`
+- Volume: `vol-06ae69927b5c48132` (8 GiB gp2)
+
+---
+
+## ✅ EBS Volumes (Persisting)
+
+- `vol-06ae69927b5c48132` (Bastion root)
+- `vol-0326049b3cdf539c8` (MongoDB root)
+- `vol-09ad6c4f23765d51f` (Former app volume)
+
+All volumes are preserved.
+No orphaned volumes exist.
+
+---
+
+## ✅ S3 Buckets (Unchanged)
+
+- Frontend bucket
+- Images bucket
+- Thumbnails bucket
+
+All data preserved.
+Public website remains hosted (if static hosting enabled).
+
+---
+
+# 💰 CURRENT COST PROFILE
+
+Previously:
+~\$150/month
+
+Now:
+
+- EBS storage (~16–24 GB total)
+- S3 storage (minimal)
+- CloudWatch logs (minimal)
+
+Estimated:
+✅ ~\$3–\$6/month
+
+---
+
+# 🚀 HOW TO RESTORE CLOUDGALLERY
+
+To bring the full production architecture back online:
+
+---
+
+## STEP 1 — Recreate NAT
+
+### Option A — NAT Gateway (Simple, Expensive)
+
+1. VPC → NAT Gateways → Create
+2. VPC: `CloudGallery-VPC`
+3. Subnet: Public subnet
+4. Allocate new Elastic IP
+5. Update private route table:
+   `0.0.0.0/0 → NAT Gateway`
+
+Cost: ~\$45/month
+
+---
+
+### Option B — NAT Instance (Cheaper Recommended)
+
+1. Launch EC2 (`t3.nano` or `t3.micro`)
+2. Place in public subnet
+3. Assign Elastic IP
+4. Disable Source/Destination Check
+5. Update private route table:
+   `0.0.0.0/0 → NAT Instance`
+
+Cost: ~\$7–10/month
+
+---
+
+## STEP 2 — Recreate Application Load Balancer
+
+1. EC2 → Load Balancers → Create
+2. Type: Application
+3. VPC: `CloudGallery-VPC`
+4. Select all public subnets
+5. Create Listener: HTTP : 80
+6. Attach Target Group: `CloudGallery-TG`
+
+Cost: ~\$15/month
+
+---
+
+## STEP 3 — Start MongoDB
+
+EC2 → Instances  
+Start:
+
+- `i-054117cab543ad7a9`
+
+---
+
+## STEP 4 — Scale Auto Scaling Group
+
+EC2 → Auto Scaling Groups → `CloudGallery-ASG`
+
+Set:
+
+- Min: 1
+- Desired: 1
+- Max: 1
+
+This launches a new backend app instance automatically.
+
+---
+
+## STEP 5 — (Optional) Start Bastion
+
+Start:
+
+- `i-06561a922b6108831`
+
+Only needed for SSH access.
+
+---
+
+## STEP 6 — Validate Application
+
+Test:
+
+- ALB DNS loads
+- `/gallery` endpoint responds
+- Image upload works
+- Lambda thumbnail generation works
+- S3 buckets accessible
+
+---
+
+# 🔄 RESTORE TIME ESTIMATE
+
+Full restart time:
+~10–15 minutes
+
+No infrastructure rebuild required.
+All architecture definitions remain intact.
+
+---
+
+# ✅ FINAL STATE SUMMARY
+
+CloudGallery is currently:
+
+- ✅ Architecturally preserved
+- ✅ Data preserved
+- ✅ IAM roles intact
+- ✅ Launch template intact
+- ✅ Auto Scaling configuration intact
+- ✅ VPC + Subnets intact
+- ✅ Runtime billing eliminated
+
+The system is in controlled cold storage mode and can be reactivated at any time.
+
+---
+
+# 🎯 RESULT
+
+You now have:
+
+- Full cost control
+- No runtime waste
+- Minimal monthly storage cost
+- Complete restart capability
+- Clean, production-grade architecture preserved
